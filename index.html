@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Завантаження фото</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #000000);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    p.subtitle {
+      font-size: 14px;
+      text-align: center;
+      opacity: 0.6;
+    }
+
+    .photo-area {
+      width: 100%;
+      height: 220px;
+      border: 2px dashed var(--tg-theme-hint-color, #aaaaaa);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      gap: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .photo-area img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 14px;
+    }
+
+    .photo-area span {
+      font-size: 14px;
+      opacity: 0.5;
+    }
+
+    .photo-area .icon {
+      font-size: 40px;
+    }
+
+    input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #ffffff);
+      transition: opacity 0.2s;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .status {
+      text-align: center;
+      font-size: 14px;
+      min-height: 20px;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .status.loading {
+      opacity: 0.6;
+    }
+
+    .progress {
+      width: 100%;
+      height: 4px;
+      background: #eeeeee;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--tg-theme-button-color, #2481cc);
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>📸 Фото товару</h2>
+  <p class="subtitle">Вибери або зроби фото</p>
+
+  <div class="photo-area" id="photoArea">
+    <span class="icon">🖼️</span>
+    <span>Натисни щоб вибрати фото</span>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+
+  <div class="progress" id="progress">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <button class="btn" id="sendBtn" disabled>
+    Відправити фото
+  </button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+  // Ініціалізація Telegram WebApp
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  // Отримуємо chat_id юзера
+  const chatId = tg.initDataUnsafe?.user?.id || '';
+  const userName = tg.initDataUnsafe?.user?.first_name || '';
+
+  // ⬇️ СЮДИ ВСТАВЛЯЄШ СВІЙ Make WEBHOOK URL
+  const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/СЮДИ_ТВІЙ_WEBHOOK';
+
+  const fileInput = document.getElementById('fileInput');
+  const photoArea = document.getElementById('photoArea');
+  const sendBtn = document.getElementById('sendBtn');
+  const statusEl = document.getElementById('status');
+  const progress = document.getElementById('progress');
+  const progressBar = document.getElementById('progressBar');
+
+  let selectedFile = null;
+
+  // Юзер вибрав фото
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    selectedFile = file;
+
+    // Показуємо прев'ю
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      photoArea.innerHTML = `<img src="${ev.target.result}" alt="preview">`;
+    };
+    reader.readAsDataURL(file);
+
+    sendBtn.disabled = false;
+    statusEl.textContent = '';
+    statusEl.className = 'status';
+  });
+
+  // Відправка фото в Make
+  sendBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    sendBtn.disabled = true;
+    progress.style.display = 'block';
+    progressBar.style.width = '30%';
+    setStatus('Завантаження...', 'loading');
+
+    const formData = new FormData();
+    formData.append('photo', selectedFile, selectedFile.name);
+    formData.append('chat_id', chatId);
+    formData.append('user_name', userName);
+
+    try {
+      progressBar.style.width = '60%';
+
+      const response = await fetch(MAKE_WEBHOOK_URL, {
+        method: 'POST',
+        body: formData
+      });
+
+      progressBar.style.width = '100%';
+
+      if (response.ok) {
+        setStatus('✅ Фото успішно відправлено!', 'success');
+        tg.MainButton.hide();
+
+        // Закриваємо мініапп через 2 секунди
+        setTimeout(() => {
+          tg.close();
+        }, 2000);
+
+      } else {
+        throw new Error('Server error');
+      }
+
+    } catch (err) {
+      progressBar.style.width = '0%';
+      progress.style.display = 'none';
+      sendBtn.disabled = false;
+      setStatus('❌ Помилка. Спробуй ще раз.', 'error');
+    }
+  });
+
+  function setStatus(text, type) {
+    statusEl.textContent = text;
+    statusEl.className = 'status ' + type;
+  }
+</script>
+
+</body>
+</html>
