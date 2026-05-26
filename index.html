@@ -137,7 +137,7 @@
 <body>
 
 <div class="container">
-  <h2>📸 Фото </h2>
+  <h2>📸 Фото товару</h2>
   <p class="subtitle">Вибери або зроби фото</p>
 
   <div class="photo-area" id="photoArea">
@@ -163,9 +163,10 @@
   tg.ready();
   tg.expand();
 
-  // Отримуємо chat_id юзера
+  // Отримуємо дані юзера
   const chatId = tg.initDataUnsafe?.user?.id || '';
   const userName = tg.initDataUnsafe?.user?.first_name || '';
+  const mcId = tg.initDataUnsafe?.start_param || '';
 
   // ⬇️ СЮДИ ВСТАВЛЯЄШ СВІЙ Make WEBHOOK URL
   const MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/3vvejwcpr0chvheidsjuctxfxklt9dh0';
@@ -211,6 +212,7 @@
     formData.append('photo', selectedFile, selectedFile.name);
     formData.append('chat_id', chatId);
     formData.append('user_name', userName);
+    formData.append('mc_id', mcId);
 
     try {
       progressBar.style.width = '60%';
