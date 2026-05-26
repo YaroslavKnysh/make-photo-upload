@@ -169,12 +169,10 @@
   const mcId = tg.initDataUnsafe?.start_param || '';
   
 // Временный дебаг - удалишь потом
-document.addEventListener('DOMContentLoaded', () => {
-  const debug = document.createElement('div');
-  debug.style = 'font-size:11px;padding:8px;background:#f5f5f5;border-radius:8px;word-break:break-all;';
-  debug.innerText = 'chat_id: ' + chatId + '\nmc_id: ' + mcId + '\nstart_param: ' + (tg.initDataUnsafe?.start_param || 'пусто');
-  document.querySelector('.container').prepend(debug);
-});
+const debug = document.createElement('div');
+debug.style = 'font-size:11px;padding:8px;background:#f5f5f5;border-radius:8px;word-break:break-all;margin-bottom:10px;';
+debug.innerText = 'chat_id: ' + chatId + '\nmc_id: ' + mcId + '\nstart_param: ' + (tg.initDataUnsafe?.start_param || 'пусто');
+document.querySelector('.container').prepend(debug);
   
   // ⬇️ СЮДИ ВСТАВЛЯЄШ СВІЙ Make WEBHOOK URL
   const MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/3vvejwcpr0chvheidsjuctxfxklt9dh0';
